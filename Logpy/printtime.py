@@ -8,6 +8,19 @@ log_filename = datetime.datetime.now().strftime("log_%Y%m%d_%H%M%S.json")
 log_data = []
 
 def log_message(time, message, folder="logs"):
+
+    """
+    Logs a message with a timestamp to a JSON file. Creates the log file if it doesn't exist.
+    
+    Args:
+    time (str):     The timestamp of the log entry.
+    message (str):  The log message.
+    folder (str):   The folder to save the log file in. Default is 'logs'.
+                    If the folder does not exist, it will be created.
+                    If none, the log file will be saved in the current directory.
+    """
+
+
     log_entry = {
         "time": time,
         "message": message
@@ -21,6 +34,18 @@ def log_message(time, message, folder="logs"):
         json.dump(log_data, log_file, indent=4)
 
 def printtime(message, indent=0, log_to_file=True):
+
+    """
+    Prints a message to the console with a timestamp. Supports strings, lists, sets, and
+    dictionaries. Optionally logs the message to a JSON log file.
+    
+    Args:
+    message (str, list, set, dict): The message to print.
+    indent (int):   The indentation level for nested structures.
+    log_to_file (bool): If True, logs the message to a JSON file.
+
+    """
+
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     indent_str = "\t" * indent
 
@@ -47,6 +72,7 @@ def printtime(message, indent=0, log_to_file=True):
 
 
 def find_files_with_extension(directory, extension, recursive=True):
+
     """
     Searches for all files with the given extension in the specified directory.
     
@@ -58,7 +84,9 @@ def find_files_with_extension(directory, extension, recursive=True):
     
     Returns:
     list: A list of file paths that match the given extension.
+
     """
+
     matching_files = []
     
     if recursive:
@@ -83,6 +111,7 @@ def find_files_with_extension(directory, extension, recursive=True):
 
 
 def delete_log_files(directory=None, recursive=False):
+
     """
     Deletes log files matching the pattern 'log_*.json' in the specified directory.
     
@@ -94,7 +123,9 @@ def delete_log_files(directory=None, recursive=False):
     
     Returns:
     int: Number of log files deleted.
+
     """
+
     # Default to the current directory if no directory is specified
     if directory is None:
         directory = os.getcwd()
@@ -123,54 +154,72 @@ def delete_log_files(directory=None, recursive=False):
     
     return deleted_count
 
+
+# ==============================================================================
+# DEMO / TESTING
+# ==============================================================================
+
 if __name__ == "__main__":
-    print("=" * 60)
+    print("=" * 70)
     print("LOGPY DEMONSTRATION")
-    print("=" * 60)
+    print("=" * 70)
     
-    # Demonstrate printtime() with different data types
-    print("\n1. PRINTTIME - Simple string message:")
+    # Demo 1: Simple messages
+    print("\n[1] PRINTTIME - Simple string message")
     printtime("This is a single message")
     
-    print("\n2. PRINTTIME - List with nested dictionary:")
-    printtime(["This is a list item 1", "This is a list item 2", {"nested_dict_key": "nested_dict_value"}])
+    # Demo 2: Lists and nested structures
+    print("\n[2] PRINTTIME - List with nested dictionary")
+    printtime([
+        "List item 1",
+        "List item 2",
+        {"nested_key": "nested_value"}
+    ])
     
-    print("\n3. PRINTTIME - Complex nested dictionary:")
-    printtime({"key1": "value1", "key2": ["list_item1", "list_item2"], "key3": {"nested_key": "nested_value"}})
+    # Demo 3: Complex dictionaries
+    print("\n[3] PRINTTIME - Complex nested dictionary")
+    printtime({
+        "key1": "value1",
+        "key2": ["list_item1", "list_item2"],
+        "key3": {"nested_key": "nested_value"}
+    })
     
-    print("\n4. PRINTTIME - Without logging to file:")
+    # Demo 4: Console-only output
+    print("\n[4] PRINTTIME - Without file logging")
     printtime("This message won't be logged to file", log_to_file=False)
     
-    # Demonstrate log_message() directly
-    print("\n5. LOG_MESSAGE - Direct log entry:")
+    # Demo 5: Direct log entry
+    print("\n[5] LOG_MESSAGE - Direct log entry")
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_message(current_time, "Direct log entry example")
     printtime("Log message added directly to log file")
     
-    # Demonstrate find_files_with_extension()
-    print("\n6. FIND_FILES_WITH_EXTENSION - Finding Python files:")
+    # Demo 6: File finding
+    print("\n[6] FIND_FILES_WITH_EXTENSION - Finding Python files")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     py_files = find_files_with_extension(current_dir, ".py")
-    printtime(f"Found {len(py_files)} Python file(s) in {current_dir}:")
+    printtime(f"Found {len(py_files)} Python file(s) in current directory")
     for file in py_files:
-        printtime(f"  - {os.path.basename(file)}", indent=1)
+        printtime(f"- {os.path.basename(file)}", indent=1)
     
-    # Demonstrate combined usage
-    print("\n7. COMBINED USAGE - Real-world scenario:")
+    # Demo 7: Combined usage scenario
+    print("\n[7] COMBINED USAGE - Real-world scenario")
     printtime("Starting file scan...")
     json_files = find_files_with_extension(os.path.dirname(current_dir), ".json")
     printtime(f"Found {len(json_files)} JSON file(s)")
     if json_files:
-        printtime("JSON files found:", indent=0)
-        for json_file in json_files[:3]:  # Show first 3 only
+        printtime("First 3 JSON files:", indent=0)
+        for json_file in json_files[:3]:
             printtime(os.path.basename(json_file), indent=1)
     
-    print("\n8. DELETE_LOG_FILES - Cleanup demonstration:")
-    printtime("Current log file will be preserved for this demo")
-    printtime("To delete logs, uncomment the line below:")
-    delete_log_files('logs')  # Uncomment to enable deletion
-    print("# delete_log_files('logs')")
+    # Demo 8: Log cleanup (commented out for safety)
+    print("\n[8] DELETE_LOG_FILES - Cleanup demonstration")
+    printtime("Log cleanup is available but disabled in demo")
+    printtime("To enable: delete_log_files('logs', recursive=True)")
+    # Uncomment below to actually delete logs:
+    # deleted = delete_log_files('logs')
+    # printtime(f"Deleted {deleted} log file(s)")
     
-    print("\n" + "=" * 60)
-    printtime(f"Demo complete! Check 'logs/{log_filename}' for the log output")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    printtime(f"Demo complete! View log at: logs/{log_filename}")
+    print("=" * 70)
