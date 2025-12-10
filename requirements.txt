@@ -1,0 +1,10 @@
+# Core dependencies
+# Python standard library modules are used for basic logging functionality
+# Add additional dependencies as the project grows
+
+# Development and Testing (optional - move to requirements-dev.txt if needed)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.0.0
