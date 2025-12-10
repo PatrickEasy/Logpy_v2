@@ -49,4 +49,5 @@ logs/
 .env
 .env.local
 
+# Folders
 logs/

@@ -17,19 +17,31 @@ Logpy_v2 provides lightweight logging utilities with support for complex data st
 
 ## Installation
 
+### From Private GitHub Repository (Recommended)
+
+Add to your project's `requirements.txt`:
+
+```
+# Using SSH (recommended for private repos)
+git+ssh://git@github.com/PatrickEasy/Logpy_v2.git
+
+# Or using HTTPS with personal access token
+git+https://github.com/PatrickEasy/Logpy_v2.git
+```
+
+Then install:
+```bash
+pip install -r requirements.txt
+```
+
+**Note for private repos**: Ensure you have SSH keys configured or use a GitHub Personal Access Token for authentication.
+
 ### From Source
 
 ```bash
 git clone https://github.com/PatrickEasy/Logpy_v2.git
 cd Logpy_v2
-pip install -r requirements.txt
-```
-
-### As a Git Submodule (Recommended for personal projects)
-
-```bash
-cd your-project
-git submodule add https://github.com/PatrickEasy/Logpy_v2.git
+pip install -e .
 ```
 
 ## Quick Start
