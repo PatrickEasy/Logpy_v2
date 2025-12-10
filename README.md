@@ -1,18 +1,19 @@
 # Logpy_v2
 
-A reusable Python logging utility library designed to provide consistent, structured logging across multiple projects.
+A simple, reusable Python logging utility for timestamped console output and JSON file logging. Designed for easy integration across multiple personal projects.
 
 ## Overview
 
-Logpy_v2 is a lightweight logging framework that can be easily integrated into your Python projects. It provides a standardized approach to logging with customizable formatters, handlers, and log levels.
+Logpy_v2 provides lightweight logging utilities with support for complex data structures, file searching, and log management. Perfect for projects that need quick, readable logging without heavy dependencies.
 
 ## Features
 
-- **Easy Integration**: Simple setup with minimal configuration
-- **Structured Logging**: Consistent log format across all your projects
-- **Flexible Configuration**: Customizable log levels, formats, and output destinations
-- **Multiple Handlers**: Support for console, file, and rotating file handlers
-- **Production Ready**: Designed for use in production environments
+- **Timestamped Output**: Automatic timestamps on all console output
+- **JSON Log Files**: Session-based JSON logs with structured data
+- **Smart Data Handling**: Automatic formatting for strings, lists, dicts, and nested structures
+- **File Utilities**: Search for files by extension with recursive/non-recursive options
+- **Log Management**: Clean up old log files easily
+- **Zero Dependencies**: Uses only Python standard library
 
 ## Installation
 
@@ -29,73 +30,148 @@ pip install -r requirements.txt
 ```bash
 cd your-project
 git submodule add https://github.com/PatrickEasy/Logpy_v2.git
-pip install -r Logpy_v2/requirements.txt
 ```
 
 ## Quick Start
 
 ```python
-from logpy_v2 import Logger
+from Logpy import printtime, log_message, find_files_with_extension, delete_log_files
 
-# Initialize logger
-logger = Logger(name="my_app")
+# Simple timestamped output
+printtime("Application started")
 
-# Log messages
-logger.info("Application started")
-logger.debug("Debug information")
-logger.warning("Warning message")
-logger.error("Error occurred")
-logger.critical("Critical issue")
+# Log complex structures with automatic formatting
+printtime({
+    "status": "running",
+    "config": {
+        "debug": True,
+        "items": [1, 2, 3]
+    }
+})
+
+# Find files by extension
+py_files = find_files_with_extension("/path/to/dir", ".py")
+printtime(f"Found {len(py_files)} Python files")
+
+# Clean up old logs
+deleted = delete_log_files("logs", recursive=True)
+printtime(f"Deleted {deleted} log files")
 ```
 
-## Configuration
+## API Reference
 
-### Basic Configuration
+### `printtime(message, indent=0, log_to_file=True)`
 
+Print timestamped messages with support for nested data structures.
+
+**Parameters:**
+- `message` (str, list, set, dict): Content to print
+- `indent` (int): Indentation level for nested structures (default: 0)
+- `log_to_file` (bool): Whether to save to JSON log file (default: True)
+
+**Examples:**
 ```python
-from logpy_v2 import Logger
+# Simple message
+printtime("Server started on port 8000")
 
-logger = Logger(
-    name="my_app",
-    level="INFO",
-    log_file="app.log"
-)
+# Nested data with auto-formatting
+printtime({
+    "user": "admin",
+    "permissions": ["read", "write", "delete"]
+})
+
+# Console only (no file logging)
+printtime("Debug info", log_to_file=False)
 ```
 
-### Advanced Configuration
+### `log_message(time, message, folder="logs")`
 
+Directly append a message to the JSON log file.
+
+**Parameters:**
+- `time` (str): Timestamp for the log entry
+- `message` (str): The message to log
+- `folder` (str): Directory for log file (default: "logs")
+
+**Example:**
 ```python
-from logpy_v2 import Logger
+import datetime
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+log_message(timestamp, "Direct log entry")
+```
 
-logger = Logger(
-    name="my_app",
-    level="DEBUG",
-    log_file="app.log",
-    max_bytes=10485760,  # 10MB
-    backup_count=5,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+### `find_files_with_extension(directory, extension, recursive=True)`
+
+Find all files with a specific extension in a directory.
+
+**Parameters:**
+- `directory` (str): Path to search in
+- `extension` (str): File extension to match (e.g., ".py", ".json")
+- `recursive` (bool): Search subdirectories (default: True)
+
+**Returns:** List of file paths
+
+**Examples:**
+```python
+# Find all Python files recursively
+py_files = find_files_with_extension("/project", ".py")
+
+# Find JSON files in directory only (not subdirectories)
+json_files = find_files_with_extension("/data", ".json", recursive=False)
+```
+
+### `delete_log_files(directory=None, recursive=False)`
+
+Delete all log files matching the pattern `log_*.json`.
+
+**Parameters:**
+- `directory` (str): Directory to search (default: current directory)
+- `recursive` (bool): Search subdirectories (default: False)
+
+**Returns:** Number of files deleted (int)
+
+**Examples:**
+```python
+# Delete logs in specific directory
+delete_log_files("logs")
+
+# Delete logs recursively
+count = delete_log_files("logs", recursive=True)
+
+# Delete logs in current directory
+delete_log_files()
 ```
 
 ## Usage in Multiple Projects
 
-Since this is designed as a reusable library for your personal projects, here are recommended approaches:
+Since this is designed as a reusable library for your personal projects:
 
-### Option 1: Git Submodule
-Add this repository as a submodule to your other projects:
+### Option 1: Git Submodule (Recommended)
 ```bash
+cd your-project
 git submodule add https://github.com/PatrickEasy/Logpy_v2.git
 ```
 
-### Option 2: Local Package Installation
-Install in development mode for local testing:
-```bash
-cd Logpy_v2
-pip install -e .
+Then import in your code:
+```python
+from Logpy import printtime, delete_log_files
 ```
 
-### Option 3: Direct Import
-Clone the repository and add it to your Python path in your project.
+### Option 2: Direct Clone
+```bash
+cd your-project
+git clone https://github.com/PatrickEasy/Logpy_v2.git
+```
+
+Add to your Python path or import directly:
+```python
+import sys
+sys.path.insert(0, 'Logpy_v2')
+from Logpy import printtime
+```
+
+### Option 3: Copy Module
+Simply copy the `Logpy/` directory into your project.
 
 ## Development
 
@@ -110,18 +186,16 @@ cd Logpy_v2
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Install development dependencies (if any)
-pip install -r requirements-dev.txt  # Optional
+# No additional dependencies needed - uses Python standard library only
 ```
 
-### Running Tests
+### Running the Demo
 
 ```bash
-pytest tests/
+python Logpy/printtime.py
 ```
+
+This will demonstrate all functions and create a sample log file.
 
 ## Project Structure
 
@@ -129,15 +203,29 @@ pytest tests/
 Logpy_v2/
 ├── README.md
 ├── requirements.txt
-├── setup.py
-├── logpy_v2/
-│   ├── __init__.py
-│   ├── logger.py
-│   └── formatters.py
-├── tests/
-│   └── test_logger.py
-└── examples/
-    └── basic_usage.py
+├── .gitignore
+├── venv/              # Virtual environment (excluded from git)
+├── logs/              # Generated log files
+└── Logpy/
+    ├── __init__.py    # Package exports
+    └── printtime.py   # Main implementation
+```
+
+## Log File Format
+
+Logs are saved as JSON files with the naming pattern `log_YYYYMMDD_HHMMSS.json`:
+
+```json
+[
+    {
+        "time": "2025-12-10 14:30:45",
+        "message": "Application started"
+    },
+    {
+        "time": "2025-12-10 14:30:46",
+        "message": "Processing complete"
+    }
+]
 ```
 
 ## Contributing
@@ -148,21 +236,14 @@ This is a personal project, but suggestions and improvements are welcome. Feel f
 
 MIT License - feel free to use this in your personal projects.
 
-## Roadmap
-
-- [ ] Add JSON logging format support
-- [ ] Implement log filtering capabilities
-- [ ] Add context managers for scoped logging
-- [ ] Create decorators for function logging
-- [ ] Add async logging support
-- [ ] Implement log aggregation features
-
 ## Changelog
 
-### Version 2.0.0 (In Development)
-- Initial setup of Logpy_v2
-- Project structure created
-- Basic documentation added
+### Version 2.0.0 (Current)
+- Complete rewrite with improved structure
+- Added file search utilities with recursive options
+- Improved log cleanup functionality
+- Better documentation and code comments
+- Removed external dependencies
 
 ## Author
 
@@ -171,3 +252,4 @@ Patrick Easy
 ## Support
 
 For issues or questions, please open an issue on the [GitHub repository](https://github.com/PatrickEasy/Logpy_v2/issues).
+

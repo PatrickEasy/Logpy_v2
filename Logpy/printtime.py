@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-import glob
 
 # Create a unique filename for each run
 log_filename = datetime.datetime.now().strftime("log_%Y%m%d_%H%M%S.json")
