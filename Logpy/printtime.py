@@ -1,12 +1,52 @@
 import datetime
 import json
 import os
+import time as time_module
+
 
 # Create a unique filename for each run
 log_filename = datetime.datetime.now().strftime("log_%Y%m%d_%H%M%S.json")
 log_data = []
 
-def log_message(time, message, folder="logs"):
+
+# Session timer - tracks elapsed time since log session started
+_session_start_time = time_module.perf_counter()
+
+
+def _format_elapsed(seconds):
+    """Format elapsed time in a human-readable way."""
+    if seconds < 1:
+        return f"{seconds * 1000:.0f}ms"
+    elif seconds < 60:
+        return f"{seconds:.2f}s"
+    elif seconds < 3600:
+        minutes = int(seconds // 60)
+        secs = seconds % 60
+        return f"{minutes}m {secs:.1f}s"
+    else:
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = seconds % 60
+        return f"{hours}h {minutes}m {secs:.1f}s"
+
+
+def get_session_elapsed():
+    """
+    Get the elapsed time since the log session started.
+    
+    Returns:
+        float: Elapsed time in seconds.
+    """
+    return time_module.perf_counter() - _session_start_time
+
+
+def reset_session_timer():
+    """Reset the session timer to start from now."""
+    global _session_start_time
+    _session_start_time = time_module.perf_counter()
+
+
+def log_message(time, message, folder="logs", elapsed=None):
 
     """
     Logs a message with a timestamp to a JSON file. Creates the log file if it doesn't exist.
@@ -17,6 +57,8 @@ def log_message(time, message, folder="logs"):
     folder (str):   The folder to save the log file in. Default is 'logs'.
                     If the folder does not exist, it will be created.
                     If none, the log file will be saved in the current directory.
+    elapsed (float): Optional elapsed time in seconds since session start.
+                     If provided, adds 'elapsed' and 'elapsed_formatted' to log entry.
     """
 
 
@@ -24,6 +66,12 @@ def log_message(time, message, folder="logs"):
         "time": time,
         "message": message
     }
+    
+    # Add elapsed time if provided
+    if elapsed is not None:
+        log_entry["elapsed"] = round(elapsed, 3)
+        log_entry["elapsed_formatted"] = _format_elapsed(elapsed)
+    
     log_data.append(log_entry)
 
     if not os.path.exists(folder):
@@ -32,20 +80,23 @@ def log_message(time, message, folder="logs"):
     with open(f"{folder}/{log_filename}", 'w') as log_file:
         json.dump(log_data, log_file, indent=4)
 
-def printtime(message, indent=0, log_to_file=True):
+
+def printtime(message, indent=0, log_to_file=True, include_elapsed=True):
 
     """
     Prints a message to the console with a timestamp. Supports strings, lists, sets, and
-    dictionaries. Optionally logs the message to a JSON log file.
+    dictionaries. Optionally logs the message to a JSON log file with elapsed time tracking.
     
     Args:
     message (str, list, set, dict): The message to print.
     indent (int):   The indentation level for nested structures.
     log_to_file (bool): If True, logs the message to a JSON file.
+    include_elapsed (bool): If True, includes elapsed time since session start in log file.
 
     """
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    elapsed = get_session_elapsed() if include_elapsed else None
     indent_str = "\t" * indent
 
     if isinstance(message, str):
@@ -53,21 +104,21 @@ def printtime(message, indent=0, log_to_file=True):
         print(f"{current_time} - {log_entry}")
     elif isinstance(message, (list, set)):
         for item in message:
-            printtime(item, indent + 1, log_to_file)
+            printtime(item, indent + 1, log_to_file, include_elapsed)
         return
     elif isinstance(message, dict):
         for key, value in message.items():
             log_entry = f"{indent_str}{key}:"
             print(f"{current_time} - {log_entry}")
-            printtime(value, indent + 1, log_to_file)
+            printtime(value, indent + 1, log_to_file, include_elapsed)
         return
     else:
         log_entry = f"{indent_str}{str(message)}"
         print(f"{current_time} - {log_entry}")
 
-    # Save log entry to log data
+    # Save log entry to log data with elapsed time
     if log_to_file:
-        log_message(current_time, log_entry)
+        log_message(current_time, log_entry, elapsed=elapsed)
 
 
 def find_files_with_extension(directory, extension, recursive=True):
@@ -158,7 +209,9 @@ def delete_log_files(directory=None, recursive=False):
 # DEMO / TESTING
 # ==============================================================================
 
+
 if __name__ == "__main__":
+    print('\n')
     print("=" * 70)
     print("LOGPY DEMONSTRATION")
     print("=" * 70)
@@ -216,9 +269,10 @@ if __name__ == "__main__":
     printtime("Log cleanup is available but disabled in demo")
     printtime("To enable: delete_log_files('logs', recursive=True)")
     # Uncomment below to actually delete logs:
-    # deleted = delete_log_files('logs')
+    deleted = delete_log_files('logs')
     # printtime(f"Deleted {deleted} log file(s)")
     
     print("\n" + "=" * 70)
     printtime(f"Demo complete! View log at: logs/{log_filename}")
     print("=" * 70)
+    print('\n')
