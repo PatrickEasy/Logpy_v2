@@ -14,7 +14,12 @@ _session_start_time = time_module.perf_counter()
 
 
 def _format_elapsed(seconds):
-    """Format elapsed time in a human-readable way."""
+
+    """
+    Format elapsed time in a human-readable way.
+    
+    """
+
     if seconds < 1:
         return f"{seconds * 1000:.0f}ms"
     elif seconds < 60:
@@ -31,17 +36,25 @@ def _format_elapsed(seconds):
 
 
 def get_session_elapsed():
+    
     """
     Get the elapsed time since the log session started.
     
     Returns:
         float: Elapsed time in seconds.
+
     """
+
     return time_module.perf_counter() - _session_start_time
 
 
 def reset_session_timer():
-    """Reset the session timer to start from now."""
+
+    """
+    Reset the session timer to start from now.
+    
+    """
+
     global _session_start_time
     _session_start_time = time_module.perf_counter()
 
@@ -59,8 +72,8 @@ def log_message(time, message, folder="logs", elapsed=None):
                     If none, the log file will be saved in the current directory.
     elapsed (float): Optional elapsed time in seconds since session start.
                      If provided, adds 'elapsed' and 'elapsed_formatted' to log entry.
+    
     """
-
 
     log_entry = {
         "time": time,
