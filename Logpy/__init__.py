@@ -30,11 +30,18 @@ from .printtime import (
     find_files_with_extension
 )
 
+from .timer import (
+    Timer,
+    timed
+)
+
 __version__ = "2.0.0"
 __author__ = "Patrick Easy"
 __all__ = [
     "printtime",
     "log_message",
     "delete_log_files",
-    "find_files_with_extension"
+    "find_files_with_extension",
+    "Timer",
+    "timed"
 ]

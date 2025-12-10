@@ -11,6 +11,8 @@ Logpy_v2 provides lightweight logging utilities with support for complex data st
 - **Timestamped Output**: Automatic timestamps on all console output
 - **JSON Log Files**: Session-based JSON logs with structured data
 - **Smart Data Handling**: Automatic formatting for strings, lists, dicts, and nested structures
+- **Function Timing**: Flexible timer with decorator, context manager, and manual control
+- **Zero-Overhead Timing**: Query elapsed time without active monitoring
 - **File Utilities**: Search for files by extension with recursive/non-recursive options
 - **Log Management**: Clean up old log files easily
 - **Zero Dependencies**: Uses only Python standard library
@@ -47,10 +49,29 @@ pip install -e .
 ## Quick Start
 
 ```python
-from Logpy import printtime, log_message, find_files_with_extension, delete_log_files
+from Logpy import printtime, log_message, find_files_with_extension, delete_log_files, Timer, timed
 
 # Simple timestamped output
 printtime("Application started")
+
+# Time a function with decorator
+@timed("process_data")
+def process_data(items):
+    # Your code here
+    return results
+
+# Time a code block
+with Timer("database_query"):
+    results = db.query(sql)
+
+# Check progress during long operations
+timer = Timer("processing", auto_log=False)
+timer.start()
+for item in large_dataset:
+    process(item)
+    if timer.elapsed() > 60:  # Check every minute
+        printtime(f"Still processing: {timer.elapsed():.1f}s")
+timer.stop()
 
 # Log complex structures with automatic formatting
 printtime({
@@ -72,7 +93,62 @@ printtime(f"Deleted {deleted} log files")
 
 ## API Reference
 
-### `printtime(message, indent=0, log_to_file=True)`
+### Timing Functions
+
+#### `Timer(name=None, auto_log=True, log_to_file=True)`
+
+Flexible timer class for measuring execution time.
+
+**Usage:**
+```python
+# Context manager
+with Timer("operation"):
+    do_work()
+
+# Manual control
+timer = Timer("task", auto_log=False)
+timer.start()
+while working:
+    do_work()
+    print(f"Elapsed: {timer.elapsed():.2f}s")
+timer.stop()
+
+# Decorator
+@Timer.decorator("function_name")
+def my_function():
+    pass
+```
+
+**Methods:**
+- `start()` - Start timing
+- `stop()` - Stop and return elapsed time
+- `elapsed()` - Get current elapsed time (works while running)
+- `is_running()` - Check if timer is active
+- `reset()` - Reset to initial state
+
+**Class Methods:**
+- `Timer.decorator(name, auto_log, log_to_file)` - Returns function decorator
+- `Timer.get(name)` - Get registered timer
+- `Timer.register(name, timer)` - Register timer globally
+- `Timer.unregister(name)` - Remove from registry
+
+See [TIMER.md](TIMER.md) for complete documentation.
+
+#### `timed(name=None, auto_log=True, log_to_file=True)`
+
+Decorator shorthand for timing functions.
+
+**Example:**
+```python
+@timed("process_data")
+def process_data(items):
+    # Automatically logs execution time
+    return processed_items
+```
+
+### Logging Functions
+
+#### `printtime(message, indent=0, log_to_file=True)`
 
 Print timestamped messages with support for nested data structures.
 
