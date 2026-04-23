@@ -1,14 +1,23 @@
 """
-Convert a Markdown file to .docx without pandoc.
+Convert between file formats without pandoc.
+
+Supported:
+    .md   -> .docx
+    .csv  -> .json
+    .json -> .csv
 
 Usage:
-    python convert.py test1.md            # writes test1.docx next to it
-    python convert.py test1.md out.docx   # explicit output path
+    python convert.py test1.md               # writes test1.docx
+    python convert.py data.csv               # writes data.json
+    python convert.py data.json              # writes data.csv
+    python convert.py data.csv out.json      # explicit output path
 
 Install once:
     pip install markdown python-docx beautifulsoup4
 """
 
+import csv
+import json
 import sys
 from pathlib import Path
 
@@ -18,11 +27,14 @@ from docx import Document
 from docx.shared import Pt
 
 
+# ---------------------------------------------------------------------------
+# Markdown -> DOCX
+# ---------------------------------------------------------------------------
+
 def _add_runs(paragraph, node):
     """Walk an HTML node and append runs to a docx paragraph, preserving bold/italic/code."""
     for child in node.children:
         if getattr(child, "name", None) is None:
-            # plain text node
             paragraph.add_run(str(child))
         elif child.name in ("strong", "b"):
             run = paragraph.add_run(child.get_text())
@@ -40,18 +52,12 @@ def _add_runs(paragraph, node):
             _add_runs(paragraph, child)
 
 
-def convert(md_path: str, docx_path: str | None = None) -> Path:
-    src = Path(md_path)
-    if not src.exists():
-        raise FileNotFoundError(src)
-    dst = Path(docx_path) if docx_path else src.with_suffix(".docx")
-
+def md_to_docx(src: Path, dst: Path) -> None:
     html = markdown.markdown(
         src.read_text(encoding="utf-8"),
         extensions=["fenced_code", "tables"],
     )
     soup = BeautifulSoup(html, "html.parser")
-
     doc = Document()
 
     for el in soup.children:
@@ -69,7 +75,6 @@ def convert(md_path: str, docx_path: str | None = None) -> Path:
                 p = doc.add_paragraph(style=style)
                 _add_runs(p, li)
         elif name == "pre":
-            # fenced code block
             code_text = el.get_text()
             p = doc.add_paragraph()
             run = p.add_run(code_text)
@@ -92,12 +97,98 @@ def convert(md_path: str, docx_path: str | None = None) -> Path:
                     table.cell(r_idx, c_idx).text = cell.get_text()
 
     doc.save(dst)
+
+
+# ---------------------------------------------------------------------------
+# CSV <-> JSON
+# ---------------------------------------------------------------------------
+
+def csv_to_json(src: Path, dst: Path) -> None:
+    with src.open("r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    with dst.open("w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2, ensure_ascii=False)
+
+
+def json_to_csv(src: Path, dst: Path) -> None:
+    data = json.loads(src.read_text(encoding="utf-8"))
+
+    # Accept either a list of dicts, or a single dict (wrap it).
+    if isinstance(data, dict):
+        data = [data]
+    if not isinstance(data, list) or not all(isinstance(r, dict) for r in data):
+        raise ValueError(
+            "JSON must be a list of flat objects (or a single object). "
+            "Nested structures aren't supported — flatten first."
+        )
+
+    # Union of keys across all rows, preserving first-seen order.
+    fieldnames: list[str] = []
+    seen = set()
+    for row in data:
+        for key in row.keys():
+            if key not in seen:
+                seen.add(key)
+                fieldnames.append(key)
+
+    with dst.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            # Stringify nested values so csv doesn't choke.
+            writer.writerow({
+                k: (json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v)
+                for k, v in row.items()
+            })
+
+
+# ---------------------------------------------------------------------------
+# Dispatcher
+# ---------------------------------------------------------------------------
+
+# Map (input_ext, output_ext) -> converter function.
+CONVERTERS = {
+    (".md", ".docx"): md_to_docx,
+    (".csv", ".json"): csv_to_json,
+    (".json", ".csv"): json_to_csv,
+}
+
+# If only input is given, pick the default output extension.
+DEFAULT_OUTPUT = {
+    ".md": ".docx",
+    ".csv": ".json",
+    ".json": ".csv",
+}
+
+
+def convert(src_path: str, dst_path: str | None = None) -> Path:
+    src = Path(src_path)
+    if not src.exists():
+        raise FileNotFoundError(src)
+
+    src_ext = src.suffix.lower()
+    if dst_path:
+        dst = Path(dst_path)
+    else:
+        if src_ext not in DEFAULT_OUTPUT:
+            raise ValueError(f"No default output format for {src_ext!r}")
+        dst = src.with_suffix(DEFAULT_OUTPUT[src_ext])
+
+    dst_ext = dst.suffix.lower()
+    key = (src_ext, dst_ext)
+    if key not in CONVERTERS:
+        supported = ", ".join(f"{a}->{b}" for a, b in CONVERTERS)
+        raise ValueError(f"Unsupported conversion {src_ext}->{dst_ext}. Supported: {supported}")
+
+    CONVERTERS[key](src, dst)
     return dst
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python convert.py <input.md> [output.docx]")
+        print("Usage: python convert.py <input> [output]")
+        print("Supported: .md -> .docx, .csv -> .json, .json -> .csv")
         sys.exit(1)
     filename = sys.argv[1]
     output = sys.argv[2] if len(sys.argv) > 2 else None
