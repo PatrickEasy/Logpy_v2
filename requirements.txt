@@ -1,17 +1,19 @@
 # Logpy_v2 Requirements
-# 
-# This project uses only Python standard library modules:
-# - datetime: For timestamp generation
-# - json: For structured log file output
-# - os: For file and directory operations
 #
-# No external dependencies required!
+# Runtime dependencies are only needed for the `convert` module. The
+# logging (printtime), timing (timer), coloured-output (print_utils),
+# and scaffolding (scaffold) modules are pure standard library.
 #
-# Python Version: 3.6+
+# Python: 3.9+
+
+# For convert.py (md -> docx, csv <-> json):
+markdown>=3.4
+python-docx>=1.0
+beautifulsoup4>=4.12
 
 # Optional Development Tools (uncomment if needed):
-# pytest>=7.4.0          # For unit testing
-# pytest-cov>=4.1.0      # For test coverage reports
-# black>=23.0.0          # For code formatting
-# flake8>=6.0.0          # For linting
-# mypy>=1.0.0            # For type checking
+# pytest>=7.4          # For unit testing
+# pytest-cov>=4.1      # For test coverage reports
+# black>=23.0          # For code formatting
+# flake8>=6.0          # For linting
+# mypy>=1.0            # For type checking

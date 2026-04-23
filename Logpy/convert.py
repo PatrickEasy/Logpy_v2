@@ -1,24 +1,36 @@
 """
 Convert between file formats without pandoc.
 
-Supported:
+Supported conversions:
     .md   -> .docx
     .csv  -> .json
     .json -> .csv
 
-Usage:
+Test-file generators (write to the ``tfiles/`` folder):
+    .md   (markdown exercising every element ``md_to_docx`` handles)
+    .docx (direct python-docx output, useful for round-trip testing)
+    .csv  (random-word rows)
+    .json (list of flat objects with the occasional nested value)
+
+CLI usage:
     python convert.py test1.md               # writes test1.docx
     python convert.py data.csv               # writes data.json
     python convert.py data.json              # writes data.csv
     python convert.py data.csv out.json      # explicit output path
 
     python convert.py --gen sample.md        # writes tfiles/sample.md
-    python convert.py --gen sample.docx      # (type picked from extension,
-    python convert.py --gen sample.csv       #  tfiles/ is created if missing)
+    python convert.py --gen sample.docx
+    python convert.py --gen sample.csv
     python convert.py --gen sample.json
+
+    python convert.py --batch ./docs .md     # convert every .md under ./docs
 
 Install once:
     pip install markdown python-docx beautifulsoup4
+
+Every conversion and generator call is wrapped in a
+:class:`Logpy.Timer` and reported through :func:`Logpy.printtime`, so
+running this script also produces a structured JSON log in ``logs/``.
 """
 
 import csv
@@ -31,6 +43,17 @@ import markdown
 from bs4 import BeautifulSoup
 from docx import Document
 from docx.shared import Pt
+
+# Shared Logpy utilities — use relative imports when loaded as a package,
+# fall back to absolute when running this file directly.
+try:
+    from .print_utils import smart_print, ok, info, err, C
+    from .printtime import printtime, find_files_with_extension
+    from .timer import Timer
+except ImportError:
+    from print_utils import smart_print, ok, info, err, C
+    from printtime import printtime, find_files_with_extension
+    from timer import Timer
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +82,7 @@ def _add_runs(paragraph, node):
 
 
 def md_to_docx(src: Path, dst: Path) -> None:
+    """Convert a markdown file to a Word document."""
     html = markdown.markdown(
         src.read_text(encoding="utf-8"),
         extensions=["fenced_code", "tables"],
@@ -110,6 +134,7 @@ def md_to_docx(src: Path, dst: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def csv_to_json(src: Path, dst: Path) -> None:
+    """Convert a CSV file to a JSON list-of-objects."""
     with src.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
@@ -118,6 +143,7 @@ def csv_to_json(src: Path, dst: Path) -> None:
 
 
 def json_to_csv(src: Path, dst: Path) -> None:
+    """Convert a JSON file (list-of-objects or single object) to CSV."""
     data = json.loads(src.read_text(encoding="utf-8"))
 
     # Accept either a list of dicts, or a single dict (wrap it).
@@ -285,13 +311,21 @@ TFILES_DIR = Path("tfiles")
 
 
 def generate(dst_path: str) -> Path:
+    """Generate a test file whose type is inferred from the extension.
+
+    The file is always written to :data:`TFILES_DIR` (``tfiles/``), which
+    is created if missing. Only the filename portion of ``dst_path`` is
+    used, so bare names and full paths both resolve there.
+    """
     # Take only the filename so bare names and full paths both end up in tfiles/.
     dst = TFILES_DIR / Path(dst_path).name
     ext = dst.suffix.lower()
     if ext not in GENERATORS:
         raise ValueError(f"No generator for {ext!r}. Supported: {list(GENERATORS)}")
     TFILES_DIR.mkdir(parents=True, exist_ok=True)
-    GENERATORS[ext](dst)
+    with Timer(f"convert.generate[{ext}]"):
+        GENERATORS[ext](dst)
+    printtime(f"Generated test file: {dst}")
     return dst
 
 
@@ -315,6 +349,13 @@ DEFAULT_OUTPUT = {
 
 
 def convert(src_path: str, dst_path: str | None = None) -> Path:
+    """Convert ``src_path`` to ``dst_path``.
+
+    If ``dst_path`` is omitted the output extension is chosen from
+    :data:`DEFAULT_OUTPUT`. Raises :class:`FileNotFoundError` if the
+    source does not exist, or :class:`ValueError` for unsupported
+    conversions.
+    """
     src = Path(src_path)
     if not src.exists():
         raise FileNotFoundError(src)
@@ -333,27 +374,85 @@ def convert(src_path: str, dst_path: str | None = None) -> Path:
         supported = ", ".join(f"{a}->{b}" for a, b in CONVERTERS)
         raise ValueError(f"Unsupported conversion {src_ext}->{dst_ext}. Supported: {supported}")
 
-    CONVERTERS[key](src, dst)
+    with Timer(f"convert[{src_ext}->{dst_ext}]"):
+        CONVERTERS[key](src, dst)
+    printtime(f"Converted {src} -> {dst}")
     return dst
 
 
-if __name__ == "__main__":
-    args = sys.argv[1:]
+def batch_convert(directory: str, extension: str, recursive: bool = True) -> list[Path]:
+    """Convert every file under ``directory`` with the given ``extension``.
+
+    Uses :func:`Logpy.find_files_with_extension` to discover inputs, then
+    calls :func:`convert` on each. Returns the list of output paths.
+    """
+    inputs = find_files_with_extension(directory, extension, recursive=recursive)
+    if not inputs:
+        smart_print(f"No {extension} files found in {directory}", "info")
+        return []
+
+    smart_print(f"Batch converting {len(inputs)} {extension} file(s) in {directory}", "title")
+    outputs: list[Path] = []
+    with Timer("convert.batch", auto_log=False) as batch:
+        for src in inputs:
+            try:
+                outputs.append(convert(src))
+                ok(f"{src}")
+            except Exception as exc:
+                smart_print(f"Failed to convert {src}: {exc}", "info")
+    printtime(
+        f"Batch converted {len(outputs)}/{len(inputs)} file(s) in "
+        f"{Timer._format_time(batch.elapsed())}"
+    )
+    return outputs
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def _print_usage() -> None:
+    smart_print("Usage", "title")
+    print("  python convert.py <input> [output]        # convert")
+    print("  python convert.py --gen <path>            # generate test file")
+    print("  python convert.py --batch <dir> <ext>     # convert every file with <ext>")
+    print("Supported: .md -> .docx, .csv <-> .json")
+
+
+def cli(argv: list[str] | None = None) -> None:
+    """Command-line entry point.
+
+    Exposed as ``logpy-convert`` when the package is pip-installed, and
+    invoked by ``python -m Logpy.convert`` / ``python convert.py``.
+    """
+    args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        print("Usage:")
-        print("  python convert.py <input> [output]   # convert")
-        print("  python convert.py --gen <path>       # generate test file")
-        print("Supported: .md -> .docx, .csv <-> .json")
+        _print_usage()
         sys.exit(1)
 
-    if args[0] in ("--gen", "--generate"):
-        if len(args) < 2:
-            print("Usage: python convert.py --gen <path>")
-            sys.exit(1)
-        out = generate(args[1])
-        print(f"Generated {out}")
-    else:
-        filename = args[0]
-        output = args[1] if len(args) > 1 else None
-        out = convert(filename, output)
-        print(f"Wrote {out}")
+    try:
+        if args[0] in ("--gen", "--generate"):
+            if len(args) < 2:
+                smart_print("Usage: python convert.py --gen <path>", "info")
+                sys.exit(1)
+            out = generate(args[1])
+            ok(f"Generated {out}")
+        elif args[0] in ("--batch",):
+            if len(args) < 3:
+                smart_print("Usage: python convert.py --batch <dir> <ext>", "info")
+                sys.exit(1)
+            directory, extension = args[1], args[2]
+            outputs = batch_convert(directory, extension)
+            ok(f"Batch complete: {len(outputs)} file(s) written")
+        else:
+            filename = args[0]
+            output = args[1] if len(args) > 1 else None
+            out = convert(filename, output)
+            ok(f"Wrote {out}")
+    except (FileNotFoundError, ValueError) as exc:
+        # err() prints the message and exits 1 — matches the old behaviour.
+        err(str(exc))
+
+
+if __name__ == "__main__":
+    cli()

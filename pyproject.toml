@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logpy"
-version = "2.1.0"
-description = "Simple logging utilities for Python projects with timestamped output and JSON file logging"
+version = "2.2.0"
+description = "Small Python utilities library: timestamped logging, flexible timers, coloured CLI helpers, file-format conversion, and a project scaffolder"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
     {name = "Patrick Easy"}
@@ -17,15 +17,43 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-keywords = ["logging", "timestamp", "json", "utilities"]
+keywords = [
+    "logging",
+    "timestamp",
+    "json",
+    "timer",
+    "utilities",
+    "cli",
+    "convert",
+    "scaffold",
+]
+
+# Runtime dependencies. The logging / timing / print-utils / scaffold
+# modules use only the standard library; the ``convert`` module needs
+# these three packages.
+dependencies = [
+    "markdown>=3.4",
+    "python-docx>=1.0",
+    "beautifulsoup4>=4.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "black>=23.0",
+    "flake8>=6.0",
+]
+
+[project.scripts]
+# Install the package and you get these on your PATH:
+logpy-convert = "Logpy.convert:cli"
+logpy-scaffold = "Logpy.scaffold:main"
 
 [project.urls]
 Homepage = "https://github.com/PatrickEasy/Logpy_v2"

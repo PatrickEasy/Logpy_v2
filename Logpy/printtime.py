@@ -2,10 +2,14 @@ import datetime
 import json
 import os
 import time as time_module
-import sys
 
-# Import printing utilities from separate module
-from print_utils import smart_print, C, title, msg, ok, info, err, ask
+# Import printing utilities from the sibling module.
+# Use a relative import when running as part of the package, and fall back
+# to an absolute import when this file is executed as a script.
+try:
+    from .print_utils import smart_print, C, title, msg, ok, info, err, ask
+except ImportError:
+    from print_utils import smart_print, C, title, msg, ok, info, err, ask
 
 
 # Create a unique filename for each run

@@ -1,6 +1,8 @@
 # Timer Usage Guide
 
-The `Timer` class provides flexible timing capabilities for measuring function execution time with zero overhead while running.
+The `Timer` class provides flexible timing capabilities for measuring function execution time with zero overhead while running. It's used internally by `convert` and `scaffold` to time their operations, and it's the easiest way to add timing to your own scripts.
+
+For the wider library overview see [README.md](README.md); for the other module guides see [CONVERT.md](CONVERT.md), [SCAFFOLD.md](SCAFFOLD.md), and [PRINT_UTILS.md](PRINT_UTILS.md).
 
 ## Key Features
 
@@ -283,7 +285,7 @@ Access formatting directly:
 formatted = Timer._format_time(125.5)  # "2m 5.50s"
 ```
 
-## Integration with printtime
+## Integration with the Rest of Logpy
 
 Timer automatically integrates with `printtime()` for consistent logging:
 
@@ -297,6 +299,8 @@ with Timer("operation"):
 # Timer output uses same timestamp format as printtime
 # 2025-12-10 14:30:45 - Timer 'operation' completed: 1.23s
 ```
+
+`convert` wraps every conversion and generator call in a named `Timer`, and `scaffold` uses named timers (`scaffold.write_files`, `scaffold.create_venv`, `scaffold.git_init`, `scaffold.total`) to break down where a scaffold run spent its time. When you build your own scripts on top of Logpy, reach for the same pattern — a short, descriptive timer name per logical step makes the resulting JSON log much easier to skim.
 
 ## Best Practices
 

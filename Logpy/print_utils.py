@@ -13,12 +13,15 @@ Available message types:
 - err: Red X for errors (exits program)
 - ask: Cyan question prompt with input
 
-Usage as import:
-    from print_utils import smart_print, ok, info, err
+Usage as import (inside the Logpy package):
+    from Logpy import smart_print, ok, info, err
+    # or, equivalently:
+    from Logpy.print_utils import smart_print, ok, info, err
     smart_print("Hello", "info")
     ok("Success!")
 
 Usage as standalone:
+    python -m Logpy.print_utils
     python print_utils.py
 """
 
@@ -137,6 +140,6 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 60)
     print("Demo complete! Import this module in your scripts:")
-    print("from print_utils import smart_print, ok, info, err")
+    print("  from Logpy import smart_print, ok, info, err")
     print("=" * 60)
     print('\n')

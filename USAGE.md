@@ -20,7 +20,7 @@ git+https://github.com/PatrickEasy/Logpy_v2.git
 
 **Option 3: Using a specific version/tag**
 ```
-git+ssh://git@github.com/PatrickEasy/Logpy_v2.git@v2.0.0
+git+ssh://git@github.com/PatrickEasy/Logpy_v2.git@v2.2.0
 ```
 
 **Option 4: Using a specific branch**
@@ -33,6 +33,8 @@ git+ssh://git@github.com/PatrickEasy/Logpy_v2.git@main
 git+ssh://git@github.com/PatrickEasy/Logpy_v2.git@abc123def456
 ```
 
+Installing the package also installs the three runtime dependencies (`markdown`, `python-docx`, `beautifulsoup4`) that the `convert` module needs. If you don't use `convert`, they're still installed but never imported at runtime.
+
 ### Step 2: Install Dependencies
 
 ```bash
@@ -42,18 +44,41 @@ pip install -r requirements.txt
 ### Step 3: Use in Your Code
 
 ```python
-from Logpy import printtime, log_message, find_files_with_extension, delete_log_files
+from Logpy import (
+    # Logging
+    printtime, log_message, get_session_elapsed, reset_session_timer,
+    find_files_with_extension, delete_log_files,
+    # Timing
+    Timer, timed,
+    # Coloured CLI output
+    smart_print, ok, info, err, ask, title, msg, C,
+    # File-format conversion + fixture generators
+    convert, batch_convert, md_to_docx, csv_to_json, json_to_csv,
+    generate, generate_md, generate_docx, generate_csv, generate_json,
+    # Project scaffolder
+    scaffold_project,
+)
 
 printtime("Your application is running!")
+```
+
+### Step 4 (optional): Use the installed CLI entry points
+
+Installing the package also puts two scripts on your `PATH`:
+
+```bash
+logpy-convert data.csv              # data.csv -> data.json
+logpy-convert --batch ./docs .md    # batch-convert every .md under ./docs
+logpy-scaffold                      # interactive project scaffolder
 ```
 
 ## Authentication for Private Repositories
 
 ### Using SSH (Recommended)
 
-1. Make sure you have SSH keys set up with GitHub
+1. Make sure you have SSH keys set up with GitHub.
 2. Test your connection: `ssh -T git@github.com`
-3. Use the SSH URL format in requirements.txt
+3. Use the SSH URL format in requirements.txt.
 
 ### Using HTTPS with Personal Access Token
 
@@ -62,7 +87,7 @@ If you need to use HTTPS (e.g., in CI/CD):
 1. Create a Personal Access Token in GitHub:
    - Go to GitHub → Settings → Developer settings → Personal access tokens
    - Generate new token with `repo` scope
-   
+
 2. Use the token in requirements.txt:
    ```
    git+https://<YOUR_TOKEN>@github.com/PatrickEasy/Logpy_v2.git
@@ -131,6 +156,18 @@ cd ../your-other-project
 python your_script.py
 ```
 
+## Running the Module Demos
+
+Every Logpy module ships a `__main__` demo you can run straight from the installed package:
+
+```bash
+python -m Logpy.printtime       # logging + elapsed-time demo
+python -m Logpy.timer           # Timer demo
+python -m Logpy.print_utils     # coloured-output demo
+python -m Logpy.convert         # CLI usage
+python -m Logpy.scaffold        # interactive scaffolder
+```
+
 ## Troubleshooting
 
 ### "Could not find a version that satisfies the requirement"
@@ -149,13 +186,18 @@ python your_script.py
 - Make sure you're importing from `Logpy` (capital L)
 - Verify installation: `pip show logpy`
 
+### ImportError for `markdown`, `docx`, or `bs4`
+- These are required by the `convert` module. Re-run `pip install -r requirements.txt`, or install them directly: `pip install markdown python-docx beautifulsoup4`.
+
 ## Example Project Structure
 
 ```
 your-project/
 ├── requirements.txt        # Contains git+ssh://git@github.com/PatrickEasy/Logpy_v2.git
 ├── main.py
-└── logs/                  # Created automatically by Logpy
+├── tfiles/                 # Created automatically by convert generators
+│   └── sample.md
+└── logs/                   # Created automatically by Logpy
     └── log_20231210_143045.json
 ```
 
@@ -169,21 +211,30 @@ requests==2.31.0
 
 **main.py:**
 ```python
-from Logpy import printtime, delete_log_files
+from Logpy import (
+    printtime, Timer, timed, convert,
+    ok, info, err, delete_log_files,
+)
 import requests
+
+@timed("fetch_github_status")
+def fetch_github_status():
+    return requests.get("https://api.github.com")
 
 def main():
     printtime("Starting application...")
-    
-    response = requests.get("https://api.github.com")
+    info("Checking GitHub status")
+
+    response = fetch_github_status()
     printtime(f"API Status: {response.status_code}")
-    
-    printtime({
-        "status": "complete",
-        "code": response.status_code
-    })
-    
-    # Clean up old logs
+
+    # Convert a local CSV to JSON — timed and logged automatically.
+    with Timer("write_report"):
+        convert("data.csv")
+
+    ok("Done")
+
+    # Clean up old logs.
     deleted = delete_log_files("logs")
     printtime(f"Cleaned up {deleted} old log files")
 
