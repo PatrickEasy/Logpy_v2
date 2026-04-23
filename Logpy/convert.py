@@ -53,7 +53,7 @@ try:
 except ImportError:
     from print_utils import smart_print, ok, info, err, C
     from printtime import printtime, find_files_with_extension
-    from timer import Timer
+    from timer import Timer # type: ignore
 
 
 # ---------------------------------------------------------------------------

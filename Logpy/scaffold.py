@@ -28,7 +28,7 @@ try:
 except ImportError:
     from print_utils import ok, info, err, ask, C, title
     from printtime import printtime
-    from timer import Timer
+    from timer import Timer # type: ignore
 
 
 # ── File contents ─────────────────────────────────────────────────────────────
