@@ -15,27 +15,11 @@ import sys
 import subprocess
 from pathlib import Path
 
+# Import printing utilities from separate module
+from print_utils import ok, info, err, ask, C
 
-# ── Colours ──────────────────────────────────────────────────────────────────
-class C:
-    RESET  = "\033[0m"
-    BOLD   = "\033[1m"
-    DIM    = "\033[2m"
-    GREEN  = "\033[92m"
-    BLUE   = "\033[94m"
-    CYAN   = "\033[96m"
-    WHITE  = "\033[97m"
-    RED    = "\033[91m"
 
-def ok(msg):   print(f"  {C.GREEN}✓{C.RESET}  {msg}")
-
-def info(msg): print(f"  {C.BLUE}→{C.RESET}  {msg}")
-
-def err(msg):  print(f"  {C.RED}✗{C.RESET}  {msg}"); sys.exit(1)
-
-def ask(prompt, default=""):
-    hint = f" [{C.DIM}{default}{C.RESET}]" if default else ""
-    return input(f"  {C.CYAN}?{C.RESET}  {prompt}{hint}: ").strip() or default
+# Printing functions are now imported from print_utils module
 
 
 # ── File contents ─────────────────────────────────────────────────────────────
