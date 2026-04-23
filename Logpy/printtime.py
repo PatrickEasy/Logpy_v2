@@ -38,6 +38,31 @@ def ask(prompt, default=""):
     hint = f" [{C.DIM}{default}{C.RESET}]" if default else ""
     return input(f"  {C.CYAN}?{C.RESET}  {prompt}{hint}: ").strip() or default
 
+def smart_print(message, msg_type=None):
+    """
+    Reusable function for formatted printing with message type support.
+    
+    Args:
+    message (str): The message to print.
+    msg_type (str): Optional message type ('ok', 'info', 'err', 'ask', 'title', 'msg').
+                   If None, uses regular print().
+    """
+    if msg_type:
+        if msg_type == "ok":
+            ok(message)
+        elif msg_type == "info":
+            info(message)
+        elif msg_type == "err":
+            err(message)
+        elif msg_type == "ask":
+            ask(message)
+        elif msg_type == "title":
+            title(message)
+        elif msg_type == "msg":
+            msg(message)
+    else:
+        print(message)
+
 def _format_elapsed(seconds):
 
     """
@@ -137,40 +162,25 @@ def printtime(message, indent=0, log_to_file=True, include_elapsed=True,msg_type
     elapsed = get_session_elapsed() if include_elapsed else None
     indent_str = "\t" * indent
 
-    if msg_type:
-        if msg_type == "ok":
-            ok(message)
-        elif msg_type == "info":
-            info(message)
-        elif msg_type == "err":
-            err(message)
-        elif msg_type == "ask":
-            ask(message)
-        elif msg_type == "title":
-            title(message)
-        elif msg_type == "msg":
-            msg(message)
-        return
-
     if isinstance(message, str):
         log_entry = f"{indent_str}{message}"
-        print(f"{current_time} - {log_entry}")
+        smart_print(f"{current_time} - {log_entry}", msg_type=msg_type)
 
     elif isinstance(message, (list, set)):
         for item in message:
-            printtime(item, indent + 1, log_to_file, include_elapsed)
+            printtime(item, indent + 1, log_to_file, include_elapsed, msg_type=msg_type)
         return
     
     elif isinstance(message, dict):
         for key, value in message.items():
             log_entry = f"{indent_str}{key}:"
-            print(f"{current_time} - {log_entry}")
-            printtime(value, indent + 1, log_to_file, include_elapsed)
+            smart_print(f"{current_time} - {log_entry}", msg_type=msg_type)
+            printtime(value, indent + 1, log_to_file, include_elapsed, msg_type=msg_type)
         return
     
     else:
         log_entry = f"{indent_str}{str(message)}"
-        print(f"{current_time} - {log_entry}")
+        smart_print(f"{current_time} - {log_entry}", msg_type=msg_type)
 
     # Save log entry to log data with elapsed time
     if log_to_file:
@@ -246,17 +256,17 @@ def delete_log_files(directory=None, recursive=False):
     
     if not log_files:
         search_type = "recursively" if recursive else "in"
-        print(f"No log files found {search_type} {directory_path}")
+        smart_print(f"No log files found {search_type} {directory_path}", "info")
         return 0
     
     deleted_count = 0
     for log_file in log_files:
         try:
             os.remove(log_file)
-            print(f"Deleted log file: {log_file}")
+            smart_print(f"Deleted log file: {log_file}", "ok")
             deleted_count += 1
         except OSError as e:
-            print(f"Error deleting file {log_file}: {e}")
+            smart_print(f"Error deleting file {log_file}: {e}", "err")
     
     return deleted_count
 
@@ -273,11 +283,11 @@ if __name__ == "__main__":
     print("=" * 70)
     
     # Demo 1: Simple messages
-    print("\n[1] PRINTTIME - Simple string message")
+    smart_print("[1] PRINTTIME - Simple messages", "title")
     printtime("This is a single message")
     
     # Demo 2: Lists and nested structures
-    print("\n[2] PRINTTIME - List with nested dictionary")
+    smart_print("[2] PRINTTIME - List with nested dictionary", "title")
     printtime([
         "List item 1",
         "List item 2",
@@ -285,7 +295,7 @@ if __name__ == "__main__":
     ])
     
     # Demo 3: Complex dictionaries
-    print("\n[3] PRINTTIME - Complex nested dictionary")
+    smart_print("[3] PRINTTIME - Complex nested dictionary", "title")
     printtime({
         "key1": "value1",
         "key2": ["list_item1", "list_item2"],
@@ -293,17 +303,17 @@ if __name__ == "__main__":
     })
     
     # Demo 4: Console-only output
-    print("\n[4] PRINTTIME - Without file logging")
+    smart_print("[4] PRINTTIME - Without file logging", "title")
     printtime("This message won't be logged to file", log_to_file=False)
     
     # Demo 5: Direct log entry
-    print("\n[5] LOG_MESSAGE - Direct log entry")
+    smart_print("[5] LOG_MESSAGE - Direct log entry", "title")
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_message(current_time, "Direct log entry example")
     printtime("Log message added directly to log file")
     
     # Demo 6: File finding
-    print("\n[6] FIND_FILES_WITH_EXTENSION - Finding Python files")
+    smart_print("[6] FIND_FILES_WITH_EXTENSION - Finding Python files", "title")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     py_files = find_files_with_extension(current_dir, ".py")
     printtime(f"Found {len(py_files)} Python file(s) in current directory")
@@ -311,7 +321,7 @@ if __name__ == "__main__":
         printtime(f"- {os.path.basename(file)}", indent=1)
     
     # Demo 7: Combined usage scenario
-    print("\n[7] COMBINED USAGE - Real-world scenario")
+    smart_print("[7] COMBINED USAGE - Real-world scenario", "title")
     printtime("Starting file scan...")
     json_files = find_files_with_extension(os.path.dirname(current_dir), ".json")
     printtime(f"Found {len(json_files)} JSON file(s)")
@@ -321,12 +331,12 @@ if __name__ == "__main__":
             printtime(os.path.basename(json_file), indent=1)
     
     # Demo 8: Log cleanup (commented out for safety)
-    print("\n[8] DELETE_LOG_FILES - Cleanup demonstration")
+    smart_print("[8] DELETE_LOG_FILES - Cleanup demonstration", "title")
     printtime("Log cleanup is available but disabled in demo")
     printtime("To enable: delete_log_files('logs', recursive=True)")
     # Uncomment below to actually delete logs:
     deleted = delete_log_files('logs')
-    # printtime(f"Deleted {deleted} log file(s)")
+    printtime(f"Deleted {deleted} log file(s)", msg_type="info")
     
     print("\n" + "=" * 70)
     printtime(f"Demo complete! View log at: logs/{log_filename}")
