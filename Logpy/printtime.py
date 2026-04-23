@@ -4,6 +4,9 @@ import os
 import time as time_module
 import sys
 
+# Import printing utilities from separate module
+from print_utils import smart_print, C, title, msg, ok, info, err, ask
+
 
 # Create a unique filename for each run
 log_filename = datetime.datetime.now().strftime("log_%Y%m%d_%H%M%S.json")
@@ -13,55 +16,7 @@ log_data = []
 # Session timer - tracks elapsed time since log session started
 _session_start_time = time_module.perf_counter()
 
-# ── Colours ──────────────────────────────────────────────────────────────────
-class C:
-    RESET  = "\033[0m"
-    BOLD   = "\033[1m"
-    DIM    = "\033[2m"
-    GREEN  = "\033[92m"
-    BLUE   = "\033[94m"
-    CYAN   = "\033[96m"
-    WHITE  = "\033[97m"
-    RED    = "\033[91m"
-
-def title(msg): print(f"\n{C.BOLD}{msg}{C.RESET}\n")
-
-def msg(msg):  print(f"{msg}")
-
-def ok(msg):   print(f"{C.GREEN}✓{C.RESET}  {msg}")
-
-def info(msg): print(f"{C.BLUE}→{C.RESET}  {msg}")
-
-def err(msg):  print(f"{C.RED}✗{C.RESET}  {msg}"); sys.exit(1)
-
-def ask(prompt, default=""):
-    hint = f" [{C.DIM}{default}{C.RESET}]" if default else ""
-    return input(f"  {C.CYAN}?{C.RESET}  {prompt}{hint}: ").strip() or default
-
-def smart_print(message, msg_type=None):
-    """
-    Reusable function for formatted printing with message type support.
-    
-    Args:
-    message (str): The message to print.
-    msg_type (str): Optional message type ('ok', 'info', 'err', 'ask', 'title', 'msg').
-                   If None, uses regular print().
-    """
-    if msg_type:
-        if msg_type == "ok":
-            ok(message)
-        elif msg_type == "info":
-            info(message)
-        elif msg_type == "err":
-            err(message)
-        elif msg_type == "ask":
-            ask(message)
-        elif msg_type == "title":
-            title(message)
-        elif msg_type == "msg":
-            msg(message)
-    else:
-        print(message)
+# Printing functions are now imported from print_utils module
 
 def _format_elapsed(seconds):
 
@@ -221,7 +176,7 @@ def find_files_with_extension(directory, extension, recursive=True):
                 if os.path.isfile(file_path) and file.endswith(extension):
                     matching_files.append(file_path)
         except OSError as e:
-            print(f"Error accessing directory {directory}: {e}")
+            smart_print(f"Error accessing directory {directory}: {e}", "err")
     
     return matching_files
 
