@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import time as time_module
+import sys
 
 
 # Create a unique filename for each run
@@ -12,6 +13,30 @@ log_data = []
 # Session timer - tracks elapsed time since log session started
 _session_start_time = time_module.perf_counter()
 
+# ── Colours ──────────────────────────────────────────────────────────────────
+class C:
+    RESET  = "\033[0m"
+    BOLD   = "\033[1m"
+    DIM    = "\033[2m"
+    GREEN  = "\033[92m"
+    BLUE   = "\033[94m"
+    CYAN   = "\033[96m"
+    WHITE  = "\033[97m"
+    RED    = "\033[91m"
+
+def title(msg): print(f"\n{C.BOLD}{msg}{C.RESET}\n")
+
+def msg(msg):  print(f"{msg}")
+
+def ok(msg):   print(f"{C.GREEN}✓{C.RESET}  {msg}")
+
+def info(msg): print(f"{C.BLUE}→{C.RESET}  {msg}")
+
+def err(msg):  print(f"{C.RED}✗{C.RESET}  {msg}"); sys.exit(1)
+
+def ask(prompt, default=""):
+    hint = f" [{C.DIM}{default}{C.RESET}]" if default else ""
+    return input(f"  {C.CYAN}?{C.RESET}  {prompt}{hint}: ").strip() or default
 
 def _format_elapsed(seconds):
 
@@ -94,7 +119,7 @@ def log_message(time, message, folder="logs", elapsed=None):
         json.dump(log_data, log_file, indent=4)
 
 
-def printtime(message, indent=0, log_to_file=True, include_elapsed=True):
+def printtime(message, indent=0, log_to_file=True, include_elapsed=True,msg_type=False):
 
     """
     Prints a message to the console with a timestamp. Supports strings, lists, sets, and
@@ -112,19 +137,37 @@ def printtime(message, indent=0, log_to_file=True, include_elapsed=True):
     elapsed = get_session_elapsed() if include_elapsed else None
     indent_str = "\t" * indent
 
+    if msg_type:
+        if msg_type == "ok":
+            ok(message)
+        elif msg_type == "info":
+            info(message)
+        elif msg_type == "err":
+            err(message)
+        elif msg_type == "ask":
+            ask(message)
+        elif msg_type == "title":
+            title(message)
+        elif msg_type == "msg":
+            msg(message)
+        return
+
     if isinstance(message, str):
         log_entry = f"{indent_str}{message}"
         print(f"{current_time} - {log_entry}")
+
     elif isinstance(message, (list, set)):
         for item in message:
             printtime(item, indent + 1, log_to_file, include_elapsed)
         return
+    
     elif isinstance(message, dict):
         for key, value in message.items():
             log_entry = f"{indent_str}{key}:"
             print(f"{current_time} - {log_entry}")
             printtime(value, indent + 1, log_to_file, include_elapsed)
         return
+    
     else:
         log_entry = f"{indent_str}{str(message)}"
         print(f"{current_time} - {log_entry}")
