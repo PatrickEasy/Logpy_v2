@@ -301,3 +301,5 @@ if __name__ == "__main__":
     printtime(f"Demo complete! View log at: logs/{log_filename}")
     print("=" * 70)
     print('\n')
+
+    #delete_log_files('logs')
