@@ -151,7 +151,6 @@ def printtime(message, indent=0, log_to_file=True, include_elapsed=True ,msg_typ
     if trailing_newline:
         print()  # Print a new line after the message
 
-
 def find_files_with_extension(directory, extension, recursive=True):
 
     """
