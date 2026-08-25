@@ -103,7 +103,7 @@ def log_message(time, message, folder="logs", elapsed=None):
         json.dump(log_data, log_file, indent=4)
 
 
-def printtime(message, indent=0, log_to_file=True, include_elapsed=True,msg_type=False):
+def printtime(message, indent=0, log_to_file=True, include_elapsed=True ,msg_type=False, new_line=True, trailing_newline=True):
 
     """
     Prints a message to the console with a timestamp. Supports strings, lists, sets, and
@@ -120,6 +120,9 @@ def printtime(message, indent=0, log_to_file=True, include_elapsed=True,msg_type
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     elapsed = get_session_elapsed() if include_elapsed else None
     indent_str = "\t" * indent
+
+    if new_line:
+        print()  # Print a new line before the message
 
     if isinstance(message, str):
         log_entry = f"{indent_str}{message}"
@@ -144,6 +147,9 @@ def printtime(message, indent=0, log_to_file=True, include_elapsed=True,msg_type
     # Save log entry to log data with elapsed time
     if log_to_file:
         log_message(current_time, log_entry, elapsed=elapsed)
+
+    if trailing_newline:
+        print()  # Print a new line after the message
 
 
 def find_files_with_extension(directory, extension, recursive=True):
